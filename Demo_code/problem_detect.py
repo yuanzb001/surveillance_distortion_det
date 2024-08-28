@@ -67,6 +67,12 @@ def getFeatures(image):
     image_features_noise = {}
     image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
+    _, threshold_image = cv2.threshold(image, 5, 255, cv2.THRESH_BINARY_INV)
+
+    black_area = np.sum(threshold_image == 255)
+    total_area = image.shape[0] * image.shape[1]
+    black_area_ratio = black_area / total_area
+
     start_time = time.time()
     # Calculate the gradients
     grad_x = cv2.Sobel(image, cv2.CV_64F, 1, 0, ksize=3)  # Gradient in x direction
@@ -99,7 +105,7 @@ def getFeatures(image):
     image_features_noise['stdGdir'] = stdGdir 
     image_features_noise['image_contrast'] = image_contrast
 
-    return image_features_blur, image_features_noise
+    return image_features_blur, image_features_noise, black_area_ratio
 
 def RTP_loss(seq_num_list, interval):
     # print('interval: ', interval)

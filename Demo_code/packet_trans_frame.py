@@ -39,9 +39,9 @@ def decode_nalu(duration_break, nalu_list, timestamp_nalu_queue, qp_threshold, f
         if not nalu_list.empty():
             # print('nalu list not empty!')
             nalu = nalu_list.get()
-            # print('nalu length: ', len(nalu))
+            print('nalu length: ', len(nalu))
         else:
-            time.sleep(0.0001)
+            time.sleep(0.5)
             continue
         if not timestamp_nalu_queue.empty():
             timestamp = timestamp_nalu_queue.get()
@@ -62,11 +62,11 @@ def decode_nalu(duration_break, nalu_list, timestamp_nalu_queue, qp_threshold, f
             nalu_data = nalu
             nalu = start_code + nalu
             # print('not start with start code!')
-        if decoded_nalu_count != duration_break:
-            decoded_nalu_count += 1
-            continue
-        else:
-            decoded_nalu_count = 0
+        # if decoded_nalu_count != duration_break:
+        #     decoded_nalu_count += 1
+        #     continue
+        # else:
+        #     decoded_nalu_count = 0
         # print('nalu length:', len(nalu), ' start with: ', nalu[:4])
         try:
             # 创建 PyAV 包
@@ -87,7 +87,7 @@ def decode_nalu(duration_break, nalu_list, timestamp_nalu_queue, qp_threshold, f
                 # print('av process time: ', time.time() - previoustime)
         except av.AVError as e:
             print(f"Error decoding packet: {e}")
-            time.sleep(0.0001)
+            time.sleep(0.5)
             continue
         # qp_value = P_slice_qp_value_extract(nalu_data.hex())
         # print('nalu length:', len(nalu_data), ' start with: ', nalu_data[:4].hex(), ' end with: ', nalu_data[-4:].hex())
@@ -181,7 +181,7 @@ def extract_packet_to_nalu(packet_queue, nalu_queue, timestamp_nalu_queue, share
             
             # print(len(udp_payload_bytes))    
         else:
-            time.sleep(0.0001)
+            time.sleep(0.1)
             wait_count += 1
             wait_time += (time.time() - previoustime_waitStart)
             continue
@@ -215,6 +215,7 @@ def extract_packet_to_nalu(packet_queue, nalu_queue, timestamp_nalu_queue, share
         seq_num_list.append(seq_num)
         
         slice_flag = (raw_data[0] & 0x1F)
+        # print(raw_data[0])
         # print(slice_flag)
         if slice_flag == 28:
             # print('FU-A type')
@@ -225,7 +226,7 @@ def extract_packet_to_nalu(packet_queue, nalu_queue, timestamp_nalu_queue, share
             # print(nal_header)
             # 起始片段
             if start_bit:
-                # print('nal Unit Start !!!!!!!!!!!!!!!!')
+                print('nal Unit Start !!!!!!!!!!!!!!!!')
                 nalu = bytearray([nal_header])  # 使用NALU头重建NALU
                 # print('nalu header: ', nalu)
                 nalu.extend(raw_data[2:])  # 添加负载数据
@@ -237,9 +238,10 @@ def extract_packet_to_nalu(packet_queue, nalu_queue, timestamp_nalu_queue, share
                 nalu.extend(raw_data[2:])
                 # print(len(raw_data[2:]))
                 if end_bit == 1:
+                    print('nal Unit End !!!!!!!!!!!!!!!!')
                     nalu_queue.put(nalu)
                     frame_count += 1
-                    # print('frame count: ', frame_count)
+                    print('frame count: ', frame_count)
                     # print('nalu length:', len(nalu))
                     process_total += (time.time() - previoustime_process)
                     # print('extract 1 nalu time: ', time.time() - previoustime)
@@ -260,9 +262,10 @@ def extract_packet_to_nalu(packet_queue, nalu_queue, timestamp_nalu_queue, share
         # elif slice_flag == 29:
         #     # print('FU-B')
         else:
+            print('whole nalu in one packet')
             nalu_queue.put(raw_data)
             frame_count += 1
-            # print('frame count: ', frame_count)
+            print('frame count: ', frame_count)
             # print('not start with start code!')
             # print('nalu length:', len(nalu), ' start with: ', nalu[:4])
             # print('nalu length:', len(raw_data))
@@ -279,7 +282,7 @@ def extract_packet_to_nalu(packet_queue, nalu_queue, timestamp_nalu_queue, share
             previoustime = time.time()
             # print(f"Captured packet: {len(raw_data)} bytes")
             # nalu_count += 1
-        time.sleep(0.0001) 
+        time.sleep(0.1) 
         # wait_count += 1
         # wait_time += (time.time() - previoustime_waitStart)
 
@@ -393,7 +396,7 @@ def frames_analysis(frame_queue, fps, packet_loss, qp_list, det_res_queue, stop_
 
                 if len(problem_type) == 0:
                     badlight_res = badlight_detect(frame_RL)
-                    image_features_blur, image_features_noise = getFeatures(frame)
+                    image_features_blur, image_features_noise, black_area_ratio = getFeatures(frame)
 
                     print('time for detect badlight and extract features', time.time() - start_time)
                     start_time = time.time()
@@ -407,7 +410,11 @@ def frames_analysis(frame_queue, fps, packet_loss, qp_list, det_res_queue, stop_
                     print('time for predicting of noise: ', time.time() - start_time)
                     start_time = time.time()
 
-                    if badlight_res:
+                    if black_area_ratio > 0.8:
+                        details_info += 'Has detected the black full background from camera!'
+                        print(details_info)
+                        problem_type.append(7)
+                    elif badlight_res:
                         details_info += 'Has detected the Badlight condition for camera!'
                         print(details_info)
                         problem_type.append(4)

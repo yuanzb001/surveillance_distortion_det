@@ -27,7 +27,7 @@ class rtsp_sender_line():
         self.package_sent_count = 0
         self.nalu_count = 0
         self.nalu_list = []
-        self.video_path = '/Users/zhuobinyuan/Desktop/Error_detection_demo/Test_util/Dataset/1_Too_much_noise.h264'
+        self.video_path = '/home/yuanzn/Documents/NSF_cohort/Demo_code_v1/test_data/1_Too_much_noise.h264'
         self.get_nalu_list()   
 
     def send_rtp_packet(self, payload, client_socket):
@@ -53,7 +53,7 @@ class rtsp_sender_line():
             print(self.RTP_SEQUENCE_NUMBER)
             self.rtp_socket.sendto(rtp_packet, (self.host, self.rtp_port))
             self.package_sent_count += 1
-            # print(self.package_sent_count, 'package sent!')
+            print(self.package_sent_count, 'package sent!')
             # time.sleep(0.001)
             # print(len(rtp_packet),' bytes Package sent with ', len(payload), ' bytes payload')
         else:
@@ -108,7 +108,7 @@ class rtsp_sender_line():
                     print('the packet was skipped!')
                 # self.rtp_socket.sendto(rtp_packet, (self.host, self.rtp_port))
                 self.package_sent_count += 1
-                # print(self.package_sent_count, 'package sent!')
+                print(self.package_sent_count, 'package sent!')
                 # time.sleep(0.001)
                 # print(len(rtp_packet),' bytes Package sent with ', len(payload), ' bytes payload')
                 # if not (remaining <= 1400):
@@ -180,7 +180,7 @@ class rtsp_sender_line():
                 # self.send_rtp_packet(nalu, client_socket)
                 # time.sleep(0.0002)  # Simulate frame interval
                 print('time for nalu segmentation:', time.time() - previous_time)
-                if len(self.nalu_list) > 500:
+                if len(self.nalu_list) > 10:
                     break
 
     def stream_video(self, client_socket):

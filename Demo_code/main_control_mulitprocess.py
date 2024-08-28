@@ -31,7 +31,8 @@ problem_type_dic = {
     3: 'occlusion',
     4: 'badlight',
     5: 'blur',
-    6: 'noise'
+    6: 'noise',
+    7: 'Full black'
 }
 
 class frame_record_update():
@@ -500,7 +501,7 @@ class MainWindow(QWidget):
 
     def initControlParam(self):
         ########## part of scatch network package
-        self.interface = "lo0"  # 替换为你的网络接口名称
+        self.interface = "lo"  # 替换为你的网络接口名称
         self.capture_filter = "udp port 5004"  # 可选的捕获过滤器条件
         # capture_filter = "udp and src host 192.168.60.101"
         # display_filter = "ip.src == 192.168.1.10"  # 可选的显示过滤器条件
@@ -569,15 +570,15 @@ class MainWindow(QWidget):
         self.capture_process = multiprocessing.Process(target=continuous_packet_capture, args=(self.interface, self.capture_filter, self.packet_queue, self.shared_array, self.shape, self.metadata, self.lock, self.video_stop_flag))
         self.extract_process = multiprocessing.Process(target=extract_packet_to_nalu, args=(self.packet_queue, self.nalu_queue, self.timestamp_nalu_queue, self.shared_array, self.shape, self.metadata, self.lock, self.packet_loss_list, self.video_stop_flag))
         self.decode_process = multiprocessing.Process(target=decode_nalu, args=(self.duration_break, self.nalu_queue, self.timestamp_nalu_queue, self.qp_threshold, self.frame_queue, self.qp_list, self.video_stop_flag))
-        self.analysis_process = multiprocessing.Process(target=frames_analysis, args=(self.frame_queue, self.fps, self.packet_loss_list, self.qp_list, self.det_res_queue, self.video_stop_flag))
-        self.update_process = multiprocessing.Process(target=self.update_unit.run, args=(self.det_res_queue, self.fps, self.table_item_queue, self.video_stop_flag, self.frame_count_value))
+        # self.analysis_process = multiprocessing.Process(target=frames_analysis, args=(self.frame_queue, self.fps, self.packet_loss_list, self.qp_list, self.det_res_queue, self.video_stop_flag))
+        # self.update_process = multiprocessing.Process(target=self.update_unit.run, args=(self.det_res_queue, self.fps, self.table_item_queue, self.video_stop_flag, self.frame_count_value))
         
 
         self.extract_process.start()
         self.capture_process.start()  
         self.decode_process.start()
-        self.analysis_process.start()
-        self.update_process.start()
+        # self.analysis_process.start()
+        # self.update_process.start()
         time.sleep(5)
         ########## part of network communication
         # uri = 'rtsp://192.168.60.101:554/cam/realmonitor?channel=1&subtype=0&unicast=true&proto=Onvif'
@@ -618,8 +619,8 @@ class MainWindow(QWidget):
         # if self.capture_process.is_alive():
         #     self.capture_process.terminate()
         #     self.capture_process.join()
-        # if self.decode_process.is_alive():
-        #     self.decode_process.terminate()
+        if self.decode_process.is_alive():
+            self.decode_process.terminate()
         # if self.analysis_process.is_alive():
         #     self.analysis_process.terminate()
         if self.rtp_process.is_alive():
