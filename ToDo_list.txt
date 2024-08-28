@@ -1,0 +1,11 @@
+Have Done list:
+	functions about every distortions detection
+
+ToDo list:
+	1. frame analysis function in packet_trans_frame.py need to be modified for full black error message detect
+	2. check process for image store when the main window process got the image results (main_control_multiprocess.py)
+	3. test sample_data and also test multiple distortions (now the results are returned by a list not the single flag)
+	4. add error message detection into single subprocess and add time duration alert setting in the setting page.
+	5. test in real camera system in lab fix camera
+	6. test for multiple camera system
+
