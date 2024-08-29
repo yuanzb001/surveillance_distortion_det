@@ -18,7 +18,7 @@ from sklearn.metrics import accuracy_score
 
 class blur_detector():
     def __init__(self):
-        self.blur_detect_model = joblib.load('saved_model/blur_linear_svm_model.joblib')
+        self.blur_detect_model = joblib.load('Demo_code/saved_model/blur_linear_svm_model.joblib')
 
     def predict_res(self, x_features):
         print('start blur detect!!!!!!!!!!!!!!!!!!!!!!!!!!')
@@ -28,7 +28,7 @@ class blur_detector():
 
 class noise_detector():
     def __init__(self):
-        self.noise_detect_model = joblib.load('saved_model/noise_linear_svm_model.joblib')
+        self.noise_detect_model = joblib.load('Demo_code/saved_model/noise_linear_svm_model.joblib')
 
     def predict_res(self, x_features):
         print('start noise detect!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
@@ -134,7 +134,7 @@ def P_slice_qp_value_extract(nalu):
         # pps_dic[pps_u.pic_parameter_set_id] = pps_u
         # print('Picture parameter set decode finised!')
         pic_init_qp_minus26 = pps_u.pic_init_qp_minus26
-    return pic_init_qp_minus26
+    return pic_init_qp_minus26, nal_unit_obj.nal_unit_type
 
 def alert_detect(frame):
     res = ''

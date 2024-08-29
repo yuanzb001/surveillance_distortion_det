@@ -27,7 +27,7 @@ class rtsp_sender_line():
         self.package_sent_count = 0
         self.nalu_count = 0
         self.nalu_list = []
-        self.video_path = '/home/yuanzn/Documents/NSF_cohort/Demo_code_v1/test_data/1_Too_much_noise.h264'
+        self.video_path = 'E:/Demo_code/dataset/Error_Message_FUll_black_screen.h264'
         self.get_nalu_list()   
 
     def send_rtp_packet(self, payload, client_socket):
@@ -151,7 +151,8 @@ class rtsp_sender_line():
             offset = 0
             print('the file size is ', len(data))
             # print('start sending rtp')
-            print('opening h264 file')  
+            print('opening h264 file')
+            nalu_count = 0  
             while offset < len(data):
                 print('the offset left:', offset)
                 previous_time = time.time()
@@ -176,12 +177,16 @@ class rtsp_sender_line():
                 # end_part = data[offset + start +4 + end: offset + start + end + 8]
                 offset = end
                 print('nalu length:', len(nalu), ' start with: ', nalu[:4].hex(), ' end with: ', nalu[-4:].hex())
-                self.nalu_list.append(nalu)
+                nalu_count += 1
+                if nalu_count > 400:
+                    self.nalu_list.append(nalu)
+                if nalu_count > 450:
+                    break
                 # self.send_rtp_packet(nalu, client_socket)
                 # time.sleep(0.0002)  # Simulate frame interval
                 print('time for nalu segmentation:', time.time() - previous_time)
-                if len(self.nalu_list) > 10:
-                    break
+                # if len(self.nalu_list) > 20:
+                #     break
 
     def stream_video(self, client_socket):
         # print('start sending rtp')

@@ -23,6 +23,9 @@ def decode_nalu(duration_break, nalu_list, timestamp_nalu_queue, qp_threshold, f
     frame_count = 0
     start_code = b'\x00\x00\x00\x01'
     # with open('get_from_camera.h264', 'wb') as f:
+    
+    
+    frame_duration = 0
     while True:
         if stop_flag.value:
             while not frame_packet.empty():
@@ -39,7 +42,7 @@ def decode_nalu(duration_break, nalu_list, timestamp_nalu_queue, qp_threshold, f
         if not nalu_list.empty():
             # print('nalu list not empty!')
             nalu = nalu_list.get()
-            print('nalu length: ', len(nalu))
+            # print('nalu length: ', len(nalu))
         else:
             time.sleep(0.5)
             continue
@@ -51,57 +54,68 @@ def decode_nalu(duration_break, nalu_list, timestamp_nalu_queue, qp_threshold, f
 
 
         if not nalu.startswith(start_code):
-            qp_value = P_slice_qp_value_extract(nalu.hex())
-            # print('time for find qp value: ', time.time() - previoustime)
-            # print('nalu length:', len(nalu), ' start with: ', nalu[:4].hex(), ' end with: ', nalu[-4:].hex())
-            if qp_value != -10000:
-                qp_list.append((qp_value + 26))
-                # print('***********************************************')
-                # print(qp_value + 26)
-                # print('***********************************************')
-            nalu_data = nalu
             nalu = start_code + nalu
-            # print('not start with start code!')
+        qp_value, nalu_type = P_slice_qp_value_extract(nalu[4:].hex())
+        print(nalu_type)
+        # print('time for find qp value: ', time.time() - previoustime)
+        # print('nalu length:', len(nalu), ' start with: ', nalu[:4].hex(), ' end with: ', nalu[-4:].hex())
+        if qp_value != -10000:
+            qp_list.append((qp_value + 26))
+            # print('***********************************************')
+            # print(qp_value + 26)
+            # print('***********************************************')
+        # print('not start with start code!')
         # if decoded_nalu_count != duration_break:
         #     decoded_nalu_count += 1
         #     continue
         # else:
         #     decoded_nalu_count = 0
         # print('nalu length:', len(nalu), ' start with: ', nalu[:4])
-        try:
-            # 创建 PyAV 包
-            # print(nalu[:10])
-            # print(nalu[-10:])
-            # print('nalu check: ', time.time() - previoustime)
-            packet = av.Packet(nalu)
-            # print('av Packet nalu: ', time.time() - previoustime)
-            # 发送包到解码器
-            frames = codec_context.decode(packet)
-            # print('codec context: ', time.time() - previoustime)
-            for frame in frames:
-                frame_count += 1
-                img = frame.to_ndarray(format='bgr24')
-                # print(str(frame_count) + '.jpg')
-                # cv2.imwrite(str(frame_count) + '.jpg', img)
-                frame_packet.put((timestamp, img))
-                # print('av process time: ', time.time() - previoustime)
-        except av.AVError as e:
-            print(f"Error decoding packet: {e}")
-            time.sleep(0.5)
-            continue
-        # qp_value = P_slice_qp_value_extract(nalu_data.hex())
-        # print('nalu length:', len(nalu_data), ' start with: ', nalu_data[:4].hex(), ' end with: ', nalu_data[-4:].hex())
-        # if qp_value != -10000:
-        #     qp_list.append((qp_value))
+        decode_flag = False
+        
+        if nalu_type in [5, 6, 7, 8] or frame_duration == duration_break:
+            decode_flag = True
+            frame_duration = 0
+        else:
+            frame_duration += 1
+            print('frame duration: ', frame_duration)       
+        
+        if decode_flag:
+            print('nalu type: ', nalu_type, ' with length: ', len(nalu))
+            try:
+                # 创建 PyAV 包
+                # print(nalu[:10])
+                # print(nalu[-10:])
+                # print('nalu check: ', time.time() - previoustime)
+                packet = av.Packet(nalu)
+                # print('av Packet nalu: ', time.time() - previoustime)
+                # 发送包到解码器
+                frames = codec_context.decode(packet)
+                # print('codec context: ', time.time() - previoustime)
+                for frame in frames:
+                    frame_count += 1
+                    img = frame.to_ndarray(format='bgr24')
+                    # print(str(frame_count) + '.jpg')
+                    # cv2.imwrite(str(frame_count) + '.jpg', img)
+                    frame_packet.put((timestamp, img))
+                    # print('av process time: ', time.time() - previoustime)
+            except av.AVError as e:
+                print(f"Error decoding packet: {e}")
+                time.sleep(0.5)
+                continue
+            # qp_value = P_slice_qp_value_extract(nalu_data.hex())
+            # print('nalu length:', len(nalu_data), ' start with: ', nalu_data[:4].hex(), ' end with: ', nalu_data[-4:].hex())
+            # if qp_value != -10000:
+            #     qp_list.append((qp_value))
 
-        time.sleep(0.0001)
-        # print('got 1 frame: ', time.time() - previoustime)
-        previoustime = time.time()
+            time.sleep(0.0001)
+            # print('got 1 frame: ', time.time() - previoustime)
+            previoustime = time.time()
 
 
 def continuous_packet_capture(interface, capture_filter, packet_queue, shared_array, shape, metadata, lock, stop_flag):
     
-    capture = pyshark.LiveCapture(interface=interface, bpf_filter=capture_filter)
+    capture = pyshark.LiveCapture(interface=interface, bpf_filter=capture_filter, tshark_path='C:/Users/Administrator/Wireshark/tshark.exe')
     
     print(f"Starting continuous packet capture on interface ...")
     # count = 0
@@ -409,8 +423,8 @@ def frames_analysis(frame_queue, fps, packet_loss, qp_list, det_res_queue, stop_
                     noise_res = noise_unit.predict_res(pd.DataFrame(image_features_noise, index=[0]))
                     print('time for predicting of noise: ', time.time() - start_time)
                     start_time = time.time()
-
-                    if black_area_ratio > 0.8:
+                    print('black area ratio: ', black_area_ratio)
+                    if black_area_ratio > 0.9:
                         details_info += 'Has detected the black full background from camera!'
                         print(details_info)
                         problem_type.append(7)
